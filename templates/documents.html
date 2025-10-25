@@ -1,0 +1,732 @@
+{% extends "base.html" %}
+
+{% block title %}Kho tài liệu - Vui Học THCS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>📚 Kho tài liệu học tập THCS</h1>
+        <p class="subtitle">Tài liệu, bài giảng và đề thi theo từng lớp (6, 7, 8, 9)</p>
+        
+        {% if session.role == 'teacher' %}
+        <a href="{{ url_for('add_document') }}" class="btn btn-primary">➕ Thêm tài liệu mới</a>
+        {% endif %}
+    </div>
+
+    <!-- BỘ LỌC THEO LỚP - CẬP NHẬT CHO THCS -->
+    <div class="grade-filters">
+        <button class="grade-btn {% if current_grade == 'all' %}active{% endif %}" 
+                onclick="location.href='{{ url_for('documents', grade='all', type=current_type) }}'">
+            🎯 Tất cả lớp
+        </button>
+        <button class="grade-btn {% if current_grade == '6' %}active{% endif %}" 
+                onclick="location.href='{{ url_for('documents', grade='6', type=current_type) }}'">
+            📘 Lớp 6
+        </button>
+        <button class="grade-btn {% if current_grade == '7' %}active{% endif %}" 
+                onclick="location.href='{{ url_for('documents', grade='7', type=current_type) }}'">
+            📗 Lớp 7
+        </button>
+        <button class="grade-btn {% if current_grade == '8' %}active{% endif %}" 
+                onclick="location.href='{{ url_for('documents', grade='8', type=current_type) }}'">
+            📙 Lớp 8
+        </button>
+        <button class="grade-btn {% if current_grade == '9' %}active{% endif %}" 
+                onclick="location.href='{{ url_for('documents', grade='9', type=current_type) }}'">
+            📕 Lớp 9
+        </button>
+    </div>
+
+    <!-- BỘ LỌC THEO LOẠI TÀI LIỆU -->
+    <div class="type-filters">
+        <button class="type-btn {% if current_type == 'all' %}active{% endif %}" 
+                onclick="location.href='{{ url_for('documents', grade=current_grade, type='all') }}'">
+            🌐 Tất cả
+        </button>
+        <button class="type-btn {% if current_type == 'document' %}active{% endif %}" 
+                onclick="location.href='{{ url_for('documents', grade=current_grade, type='document') }}'">
+            📄 Tài liệu
+        </button>
+        <button class="type-btn {% if current_type == 'lecture' %}active{% endif %}" 
+                onclick="location.href='{{ url_for('documents', grade=current_grade, type='lecture') }}'">
+            🎓 Bài giảng
+        </button>
+        <button class="type-btn {% if current_type == 'exam' %}active{% endif %}" 
+                onclick="location.href='{{ url_for('documents', grade=current_grade, type='exam') }}'">
+            📝 Bộ đề thi
+        </button>
+    </div>
+
+    <!-- HIỂN THỊ TÀI LIỆU -->
+    {% if current_grade == 'all' %}
+        <!-- Hiển thị theo lớp khi chọn "Tất cả lớp" -->
+        {% for grade, docs in docs_by_grade.items() %}
+            {% if docs %}
+            <div class="grade-section">
+                <h2 class="grade-title">
+                    {% if grade == '6' %}📘 Lớp 6
+                    {% elif grade == '7' %}📗 Lớp 7
+                    {% elif grade == '8' %}📙 Lớp 8
+                    {% elif grade == '9' %}📕 Lớp 9
+                    {% endif %}
+                    <span class="doc-count">({{ docs|length }} tài liệu)</span>
+                </h2>
+                <div class="documents-grid">
+                    {% for doc in docs %}
+                    <div class="document-card">
+                        <div class="doc-header">
+                            <!-- Badge loại tài liệu -->
+                            <span class="doc-type-badge {{ doc.doc_type }}">
+                                {% if doc.doc_type == 'document' %}📄 Tài liệu
+                                {% elif doc.doc_type == 'lecture' %}🎓 Bài giảng
+                                {% elif doc.doc_type == 'exam' %}📝 Đề thi
+                                {% else %}📋 Khác{% endif %}
+                            </span>
+                            <!-- Badge lớp học -->
+                            <span class="doc-grade-badge grade-{{ doc.grade }}">Lớp {{ doc.grade }}</span>
+                        </div>
+                        
+                        <h3 class="doc-title">{{ doc.title }}</h3>
+                        <p class="doc-description">{{ doc.description or 'Không có mô tả' }}</p>
+                        
+                        <div class="doc-meta">
+                            <!-- Loại link -->
+                            <span class="link-type">
+                                {% if doc.link_type == 'youtube' %}🎥 YouTube
+                                {% elif doc.link_type == 'drive' %}☁️ Google Drive
+                                {% else %}🔗 Link{% endif %}
+                            </span>
+                            <!-- Ngày tạo -->
+                            <span class="doc-date">📅 {{ doc.created_at[:10] if doc.created_at else 'N/A' }}</span>
+                        </div>
+                        
+                        <!-- Nút xem/tải tài liệu -->
+                        {% if doc.link_type == 'youtube' %}
+                        <button onclick="openVideoModal('{{ doc.url }}', '{{ doc.title }}')" class="btn btn-primary btn-block">
+                            ▶️ Xem video
+                        </button>
+                        {% else %}
+                        <a href="{{ doc.url }}" target="_blank" class="btn btn-primary btn-block">
+                            {% if doc.link_type == 'drive' %}📥 Tải tài liệu
+                            {% else %}👁️ Xem tài liệu{% endif %}
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        {% endfor %}
+        
+        <!-- Kiểm tra nếu không có tài liệu nào -->
+        {% if not docs_by_grade['6'] and not docs_by_grade['7'] and not docs_by_grade['8'] and not docs_by_grade['9'] %}
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h3>Chưa có tài liệu nào</h3>
+            <p>Hiện tại chưa có tài liệu nào trong hệ thống.</p>
+            {% if session.role == 'teacher' %}
+            <a href="{{ url_for('add_document') }}" class="btn btn-primary">➕ Thêm tài liệu đầu tiên</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% else %}
+        <!-- Hiển thị tài liệu của lớp được chọn -->
+        {% set selected_docs = docs_by_grade.get(current_grade, []) %}
+        {% if selected_docs %}
+        <div class="grade-section">
+            <h2 class="grade-title">
+                {% if current_grade == '6' %}📘 Lớp 6
+                {% elif current_grade == '7' %}📗 Lớp 7
+                {% elif current_grade == '8' %}📙 Lớp 8
+                {% elif current_grade == '9' %}📕 Lớp 9
+                {% endif %}
+                <span class="doc-count">({{ selected_docs|length }} tài liệu)</span>
+            </h2>
+            <div class="documents-grid">
+                {% for doc in selected_docs %}
+                <div class="document-card">
+                    <div class="doc-header">
+                        <span class="doc-type-badge {{ doc.doc_type }}">
+                            {% if doc.doc_type == 'document' %}📄 Tài liệu
+                            {% elif doc.doc_type == 'lecture' %}🎓 Bài giảng
+                            {% elif doc.doc_type == 'exam' %}📝 Đề thi
+                            {% else %}📋 Khác{% endif %}
+                        </span>
+                        <span class="doc-grade-badge grade-{{ doc.grade }}">Lớp {{ doc.grade }}</span>
+                    </div>
+                    
+                    <h3 class="doc-title">{{ doc.title }}</h3>
+                    <p class="doc-description">{{ doc.description or 'Không có mô tả' }}</p>
+                    
+                    <div class="doc-meta">
+                        <span class="link-type">
+                            {% if doc.link_type == 'youtube' %}🎥 YouTube
+                            {% elif doc.link_type == 'drive' %}☁️ Google Drive
+                            {% else %}🔗 Link{% endif %}
+                        </span>
+                        <span class="doc-date">📅 {{ doc.created_at[:10] if doc.created_at else 'N/A' }}</span>
+                    </div>
+                    
+                    {% if doc.link_type == 'youtube' %}
+                    <button onclick="openVideoModal('{{ doc.url }}', '{{ doc.title }}')" class="btn btn-primary btn-block">
+                        ▶️ Xem video
+                    </button>
+                    {% else %}
+                    <a href="{{ doc.url }}" target="_blank" class="btn btn-primary btn-block">
+                        {% if doc.link_type == 'drive' %}📥 Tải tài liệu
+                        {% else %}👁️ Xem tài liệu{% endif %}
+                    </a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <!-- Trạng thái trống khi không có tài liệu -->
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h3>Chưa có tài liệu nào</h3>
+            <p>Chưa có tài liệu cho lớp {{ current_grade }} trong danh mục này.</p>
+            {% if session.role == 'teacher' %}
+            <a href="{{ url_for('add_document') }}" class="btn btn-primary">➕ Thêm tài liệu đầu tiên</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+<!-- MODAL XEM VIDEO -->
+<div id="videoModal" class="video-modal">
+    <div class="video-modal-content">
+        <div class="video-modal-header">
+            <h2 id="videoTitle">Video</h2>
+            <button class="close-modal" onclick="closeVideoModal()">✕</button>
+        </div>
+        <div class="video-modal-body">
+            <div class="video-container-modal">
+                <iframe id="videoFrame" src="" frameborder="0" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function getYouTubeVideoId(url) {
+    let videoId = '';
+    if (url.includes('youtube.com')) {
+        try {
+            const urlParams = new URLSearchParams(new URL(url).search);
+            videoId = urlParams.get('v');
+        } catch (e) {
+            console.error('Invalid YouTube URL');
+        }
+    } else if (url.includes('youtu.be')) {
+        try {
+            videoId = url.split('youtu.be/')[1].split('?')[0];
+        } catch (e) {
+            console.error('Invalid YouTube URL');
+        }
+    }
+    return videoId;
+}
+
+function openVideoModal(url, title) {
+    const videoId = getYouTubeVideoId(url);
+    
+    if (videoId) {
+        const modal = document.getElementById('videoModal');
+        const iframe = document.getElementById('videoFrame');
+        const titleEl = document.getElementById('videoTitle');
+        
+        iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        titleEl.textContent = title;
+        modal.style.display = 'flex';
+        
+        // Ngăn scroll body khi modal mở
+        document.body.style.overflow = 'hidden';
+    } else {
+        alert('⚠️ Không thể nhúng video này. Vui lòng thử mở trên YouTube.');
+        window.open(url, '_blank');
+    }
+}
+
+function closeVideoModal() {
+    const modal = document.getElementById('videoModal');
+    const iframe = document.getElementById('videoFrame');
+    
+    // Dừng video
+    iframe.src = '';
+    modal.style.display = 'none';
+    
+    // Cho phép scroll lại
+    document.body.style.overflow = 'auto';
+}
+
+// Đóng modal khi click bên ngoài
+document.getElementById('videoModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeVideoModal();
+    }
+});
+
+// Đóng modal bằng phím ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeVideoModal();
+    }
+});
+</script>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* HEADER */
+.page-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+}
+
+.page-header h1 {
+    font-size: 32px;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.subtitle {
+    font-size: 16px;
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
+/* BỘ LỌC THEO LỚP */
+.grade-filters {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.grade-btn {
+    padding: 14px 28px;
+    border: 3px solid #667eea;
+    background: white;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    font-weight: 700;
+    color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.grade-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.grade-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #764ba2;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* BỘ LỌC THEO LOẠI */
+.type-filters {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.type-btn {
+    padding: 10px 24px;
+    border: 2px solid #ddd;
+    background: white;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+}
+
+.type-btn:hover {
+    border-color: #28a745;
+    color: #28a745;
+    transform: translateY(-2px);
+}
+
+.type-btn.active {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-color: #28a745;
+    color: white;
+}
+
+/* PHẦN CHIA THEO LỚP */
+.grade-section {
+    margin-bottom: 60px;
+}
+
+.grade-title {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 4px solid #667eea;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.doc-count {
+    font-size: 18px;
+    color: #888;
+    font-weight: 400;
+}
+
+/* GRID HIỂN THỊ TÀI LIỆU */
+.documents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.document-card {
+    background: white;
+    border: 2px solid #f0f0f0;
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.document-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+    border-color: #667eea;
+}
+
+/* HEADER CARD */
+.doc-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+/* BADGE LOẠI TÀI LIỆU */
+.doc-type-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.doc-type-badge.document {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+}
+
+.doc-type-badge.lecture {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.doc-type-badge.exam {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+/* BADGE LỚP HỌC */
+.doc-grade-badge {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.doc-grade-badge.grade-6 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.doc-grade-badge.grade-7 {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.doc-grade-badge.grade-8 {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.doc-grade-badge.grade-9 {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+/* TIÊU ĐỀ TÀI LIỆU */
+.doc-title {
+    font-size: 19px;
+    color: #333;
+    margin-bottom: 12px;
+    min-height: 55px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* MÔ TẢ */
+.doc-description {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 16px;
+    flex-grow: 1;
+    min-height: 45px;
+    line-height: 1.6;
+}
+
+/* META INFO */
+.doc-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-top: 12px;
+    border-top: 2px solid #f5f5f5;
+    gap: 10px;
+}
+
+.link-type {
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+}
+
+.doc-date {
+    font-size: 12px;
+    color: #999;
+    font-weight: 600;
+}
+
+/* NÚT BẤM */
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* TRẠNG THÁI TRỐNG */
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    background: white;
+    border-radius: 16px;
+    border: 3px dashed #ddd;
+}
+
+.empty-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+}
+
+.empty-state h3 {
+    font-size: 24px;
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.empty-state p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 16px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .documents-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .grade-filters,
+    .type-filters {
+        flex-direction: column;
+    }
+    
+    .grade-btn,
+    .type-btn {
+        width: 100%;
+    }
+    
+    .page-header h1 {
+        font-size: 24px;
+    }
+    
+    .grade-title {
+        font-size: 22px;
+    }
+    
+    .video-modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .document-card {
+        padding: 16px;
+    }
+    
+    .doc-title {
+        font-size: 16px;
+    }
+}
+
+/* VIDEO MODAL */
+.video-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.video-modal-content {
+    background: white;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.video-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.video-modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.close-modal {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 28px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-modal:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.video-modal-body {
+    padding: 0;
+}
+
+.video-container-modal {
+    position: relative;
+    width: 100%;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    background: #000;
+}
+
+.video-container-modal iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+</style>
+{% endblock %}
