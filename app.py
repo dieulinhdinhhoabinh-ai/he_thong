@@ -1084,9 +1084,7 @@ def lich_su_tracnghiem():
         return redirect(url_for('tracnghiem'))
 
 
-# ============================================================================
-# ROUTE 6: Reset session (đã sửa)
-# ============================================================================
+
 @app.route('/tracnghiem/reset/<subject>/<exam_id>')
 @login_required
 @student_required

@@ -1,16 +1,16 @@
 [
   {
     "id": "1",
-    "username": "colan",
-    "password": "giaovientin",
+    "username": "colinh",
+    "password": "giaovienthcs",
     "email": "giaovien@school.edu.vn",
     "role": "teacher",
     "created_at": "2025-01-10T08:00:00"
   },
   {
     "id": "2",
-    "username": "nguyenvana",
-    "password": "scrypt:32768:8:1$...",
+    "username": "thaydaytoan",
+    "password": "thaydaytoan1234",
     "email": "vana@student.edu.vn",
     "role": "student",
     "created_at": "2025-01-12T09:00:00"
