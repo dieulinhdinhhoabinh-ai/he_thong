@@ -12,7 +12,7 @@
         {% endif %}
     </div>
 
-    <!-- BỘ LỌC THEO LỚP -->
+    <!-- Bộ LỌC THEO LỚP -->
     <div class="grade-filters">
         <button class="grade-btn {% if current_grade == 'all' %}active{% endif %}" 
                 onclick="location.href='{{ url_for('documents', grade='all', type=current_type) }}'">🎯 Tất cả lớp</button>
@@ -26,7 +26,7 @@
                 onclick="location.href='{{ url_for('documents', grade='9', type=current_type) }}'">📕 Lớp 9</button>
     </div>
 
-    <!-- BỘ LỌC THEO LOẠI -->
+    <!-- Bộ LỌC THEO LOẠI -->
     <div class="type-filters">
         <button class="type-btn {% if current_type == 'all' %}active{% endif %}" 
                 onclick="location.href='{{ url_for('documents', grade=current_grade, type='all') }}'">🌐 Tất cả</button>
@@ -56,17 +56,26 @@
                             </span>
                             <span class="doc-grade-badge grade-{{ doc.grade }}">Lớp {{ doc.grade }}</span>
                         </div>
+                        
                         <h3 class="doc-title">{{ doc.title }}</h3>
                         <p class="doc-description">{{ doc.description or 'Không có mô tả' }}</p>
+                        
                         <div class="doc-meta">
                             <span class="link-type">{% if doc.link_type == 'youtube' %}🎥 YouTube{% elif doc.link_type == 'drive' %}☁️ Google Drive{% else %}🔗 Link{% endif %}</span>
                             <span class="doc-date">📅 {{ doc.created_at[:10] if doc.created_at else 'N/A' }}</span>
                         </div>
-                        {% if doc.link_type == 'youtube' %}
-                        <button onclick="openVideoModal('{{ doc.url }}', '{{ doc.title }}')" class="btn btn-primary btn-block">▶️ Xem video</button>
-                        {% else %}
-                        <a href="{{ doc.url }}" target="_blank" class="btn btn-primary btn-block">{% if doc.link_type == 'drive' %}📥 Tải tài liệu{% else %}👁️ Xem tài liệu{% endif %}</a>
-                        {% endif %}
+                        
+                        <div class="doc-actions">
+                            {% if doc.link_type == 'youtube' %}
+                            <button onclick="openVideoModal('{{ doc.url }}', '{{ doc.title }}')" class="btn btn-primary btn-action">▶️ Xem video</button>
+                            {% else %}
+                            <a href="{{ doc.url }}" target="_blank" class="btn btn-primary btn-action">{% if doc.link_type == 'drive' %}📥 Tải tài liệu{% else %}👁️ Xem tài liệu{% endif %}</a>
+                            {% endif %}
+                            
+                            {% if session.role == 'teacher' and doc.get('teacher_id') == session.user_id %}
+                            <button onclick="deleteDocument('{{ doc.id }}', '{{ doc.title }}')" class="btn btn-danger btn-action" title="Xóa tài liệu">🗑️</button>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
@@ -76,7 +85,7 @@
         
         {% if not docs_by_grade['6'] and not docs_by_grade['7'] and not docs_by_grade['8'] and not docs_by_grade['9'] %}
         <div class="empty-state">
-            <div class="empty-icon">📭</div>
+            <div class="empty-icon">🔭</div>
             <h3>Chưa có tài liệu nào</h3>
             <p>Hiện tại chưa có tài liệu nào trong hệ thống.</p>
             {% if session.role == 'teacher' %}<a href="{{ url_for('add_document') }}" class="btn btn-primary">➕ Thêm tài liệu đầu tiên</a>{% endif %}
@@ -99,30 +108,54 @@
                         </span>
                         <span class="doc-grade-badge grade-{{ doc.grade }}">Lớp {{ doc.grade }}</span>
                     </div>
+                    
                     <h3 class="doc-title">{{ doc.title }}</h3>
                     <p class="doc-description">{{ doc.description or 'Không có mô tả' }}</p>
+                    
                     <div class="doc-meta">
                         <span class="link-type">{% if doc.link_type == 'youtube' %}🎥 YouTube{% elif doc.link_type == 'drive' %}☁️ Google Drive{% else %}🔗 Link{% endif %}</span>
                         <span class="doc-date">📅 {{ doc.created_at[:10] if doc.created_at else 'N/A' }}</span>
                     </div>
-                    {% if doc.link_type == 'youtube' %}
-                    <button onclick="openVideoModal('{{ doc.url }}', '{{ doc.title }}')" class="btn btn-primary btn-block">▶️ Xem video</button>
-                    {% else %}
-                    <a href="{{ doc.url }}" target="_blank" class="btn btn-primary btn-block">{% if doc.link_type == 'drive' %}📥 Tải tài liệu{% else %}👁️ Xem tài liệu{% endif %}</a>
-                    {% endif %}
+                    
+                    <div class="doc-actions">
+                        {% if doc.link_type == 'youtube' %}
+                        <button onclick="openVideoModal('{{ doc.url }}', '{{ doc.title }}')" class="btn btn-primary btn-action">▶️ Xem video</button>
+                        {% else %}
+                        <a href="{{ doc.url }}" target="_blank" class="btn btn-primary btn-action">{% if doc.link_type == 'drive' %}📥 Tải tài liệu{% else %}👁️ Xem tài liệu{% endif %}</a>
+                        {% endif %}
+                        
+                        {% if session.role == 'teacher' and doc.get('teacher_id') == session.user_id %}
+                        <button onclick="deleteDocument('{{ doc.id }}', '{{ doc.title }}')" class="btn btn-danger btn-action" title="Xóa tài liệu">🗑️</button>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
         </div>
         {% else %}
         <div class="empty-state">
-            <div class="empty-icon">📭</div>
+            <div class="empty-icon">🔭</div>
             <h3>Chưa có tài liệu nào</h3>
             <p>Chưa có tài liệu cho lớp {{ current_grade }} trong danh mục này.</p>
             {% if session.role == 'teacher' %}<a href="{{ url_for('add_document') }}" class="btn btn-primary">➕ Thêm tài liệu đầu tiên</a>{% endif %}
         </div>
         {% endif %}
     {% endif %}
+</div>
+
+<!-- MODAL XÓA XÁC NHẬN -->
+<div id="deleteModal" class="delete-modal">
+    <div class="delete-modal-content">
+        <div class="delete-icon">⚠️</div>
+        <h2>Xác nhận xóa tài liệu</h2>
+        <p>Bạn có chắc chắn muốn xóa tài liệu:</p>
+        <p class="delete-doc-title" id="deleteDocTitle"></p>
+        <p class="warning-text">⚠️ Hành động này không thể hoàn tác!</p>
+        <div class="delete-actions">
+            <button onclick="confirmDelete()" class="btn btn-danger">🗑️ Xóa tài liệu</button>
+            <button onclick="closeDeleteModal()" class="btn btn-secondary">❌ Hủy</button>
+        </div>
+    </div>
 </div>
 
 <!-- MODAL XEM VIDEO -->
@@ -138,7 +171,53 @@
 
 <script>
 let currentVideoUrl = '';
+let deleteDocId = '';
+let deleteDocTitle = '';
 
+// ==================== XÓA TÀI LIỆU ====================
+function deleteDocument(docId, docTitle) {
+    deleteDocId = docId;
+    deleteDocTitle = docTitle;
+    document.getElementById('deleteDocTitle').textContent = `"${docTitle}"`;
+    document.getElementById('deleteModal').style.display = 'flex';
+    setTimeout(() => document.getElementById('deleteModal').classList.add('active'), 10);
+}
+
+function closeDeleteModal() {
+    const modal = document.getElementById('deleteModal');
+    modal.classList.remove('active');
+    setTimeout(() => {
+        modal.style.display = 'none';
+        deleteDocId = '';
+        deleteDocTitle = '';
+    }, 300);
+}
+
+async function confirmDelete() {
+    if (!deleteDocId) return;
+    
+    try {
+        const response = await fetch(`/teacher/delete_document/${deleteDocId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('✅ ' + result.message);
+            closeDeleteModal();
+            location.reload();
+        } else {
+            alert('❌ ' + result.message);
+        }
+    } catch (error) {
+        alert('❌ Có lỗi xảy ra: ' + error.message);
+        console.error(error);
+    }
+}
+
+// ==================== VIDEO MODAL ====================
 function getYouTubeVideoId(url) {
     let videoId = '';
     if (url.includes('youtube.com')) {
@@ -192,7 +271,12 @@ function closeVideoModal() {
     }, 300);
 }
 
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVideoModal(); });
+document.addEventListener('keydown', e => { 
+    if (e.key === 'Escape') {
+        closeVideoModal();
+        closeDeleteModal();
+    }
+});
 </script>
 
 <style>
@@ -229,14 +313,35 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVideoMo
 .doc-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-top: 12px; border-top: 2px solid #f5f5f5; gap: 10px; }
 .link-type { padding: 5px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; }
 .doc-date { font-size: 12px; color: #999; font-weight: 600; }
+
+/* NÚT HÀNH ĐỘNG */
+.doc-actions { display: flex; gap: 10px; }
 .btn { display: inline-block; padding: 12px 24px; border: none; border-radius: 10px; cursor: pointer; text-decoration: none; font-size: 15px; font-weight: 700; transition: all 0.3s; text-align: center; }
+.btn-action { flex: 1; padding: 10px 16px; font-size: 14px; }
 .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(102,126,234,0.4); }
-.btn-block { width: 100%; }
+.btn-danger { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 10px 16px; min-width: 45px; }
+.btn-danger:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(220,53,69,0.4); }
+.btn-secondary { background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; }
+.btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(108,117,125,0.4); }
+
 .empty-state { text-align: center; padding: 80px 20px; background: white; border-radius: 16px; border: 3px dashed #ddd; }
 .empty-icon { font-size: 80px; margin-bottom: 20px; }
 .empty-state h3 { font-size: 24px; margin-bottom: 12px; color: #333; }
 .empty-state p { color: #666; margin-bottom: 25px; font-size: 16px; }
+
+/* MODAL XÓA */
+.delete-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
+.delete-modal.active { opacity: 1; }
+.delete-modal-content { background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transform: scale(0.9); transition: transform 0.3s; }
+.delete-modal.active .delete-modal-content { transform: scale(1); }
+.delete-icon { font-size: 60px; text-align: center; margin-bottom: 20px; }
+.delete-modal-content h2 { font-size: 24px; color: #333; margin-bottom: 15px; text-align: center; }
+.delete-modal-content p { color: #666; margin-bottom: 10px; text-align: center; font-size: 16px; }
+.delete-doc-title { font-weight: 700; color: #dc3545; font-size: 18px; margin: 15px 0; }
+.warning-text { color: #dc3545; font-weight: 600; margin-top: 20px; }
+.delete-actions { display: flex; gap: 15px; margin-top: 30px; }
+.delete-actions .btn { flex: 1; }
 
 /* VIDEO MODAL */
 .video-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 10000; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
@@ -261,20 +366,30 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeVideoMo
     .grade-btn, .type-btn { width: 100%; }
     .page-header h1 { font-size: 24px; }
     .grade-title { font-size: 22px; }
+    .doc-actions { flex-direction: column; }
+    .btn-action { width: 100%; }
     .close-modal-big { width: 50px; height: 50px; font-size: 28px; top: 15px; left: 15px; }
     .video-title-overlay { top: 15px; left: 80px; right: 15px; padding: 14px 20px; border-radius: 40px; }
     .video-title-overlay h2 { font-size: 16px; }
     .video-player-wrapper { width: 95vw; }
+    .delete-modal-content { padding: 30px; }
+    .delete-actions { flex-direction: column; }
 }
+
 @media (max-width: 480px) {
     .container { padding: 10px; }
     .document-card { padding: 16px; }
-    .doc-title { font-size: 16px; }
+    .doc-title { font-size: 16px; min-height: auto; }
+    .doc-description { min-height: auto; }
     .close-modal-big { width: 44px; height: 44px; font-size: 24px; top: 10px; left: 10px; }
     .video-title-overlay { top: 10px; left: 70px; right: 10px; padding: 12px 18px; border-radius: 30px; }
     .video-title-overlay h2 { font-size: 14px; }
     .video-player-wrapper { width: 98vw; }
     .video-player-wrapper iframe, .video-loading { border-radius: 12px; }
+    .delete-modal-content { padding: 20px; }
+    .delete-icon { font-size: 50px; }
+    .delete-modal-content h2 { font-size: 20px; }
+    .delete-doc-title { font-size: 16px; }
 }
 </style>
 {% endblock %}

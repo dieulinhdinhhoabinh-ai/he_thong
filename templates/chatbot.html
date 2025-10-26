@@ -38,19 +38,24 @@
         <div class="suggestions">
             <div class="suggestions-header">Gợi ý câu hỏi</div>
             <div class="suggestions-grid">
-                <button onclick="quickQuestion('cách học toán lớp 9')" class="suggestion-btn">
-                    <span class="suggestion-text">cách học toán lớp 9</span>
+                <button onclick="quickQuestion('Giải thích công thức động năng')" class="suggestion-btn">
+                    <span class="suggestion-text">Giải thích công thức động năng</span>
                 </button>
-                <button onclick="quickQuestion('cách học từ vựng tiếng anh')" class="suggestion-btn">
-                    <span class="suggestion-text">cách học từ vựng tiếng anh</span>
+                <button onclick="quickQuestion('Cách học từ vựng tiếng anh')" class="suggestion-btn">
+                    <span class="suggestion-text">Cách học từ vựng tiếng anh</span>
                 </button>
-                <button onclick="quickQuestion('Tôi muốn dễ nhớ công thức')" class="suggestion-btn">
-                    <span class="suggestion-text">Tôi muốn dễ nhớ công thức</span>
+                <button onclick="quickQuestion('Giải phương trình bậc 2')" class="suggestion-btn">
+                    <span class="suggestion-text">Giải phương trình bậc 2</span>
                 </button>
             </div>
         </div>
     </div>
 </div>
+
+<!-- ✅ THÊM KATEX ĐỂ RENDER CÔNG THỨC TOÁN HỌC -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 
 <script>
 async function sendMessage(event) {
@@ -86,13 +91,23 @@ async function sendMessage(event) {
 }
 
 function formatText(text) {
-    // Remove markdown symbols
-    text = text.replace(/\*\*/g, '');
-    text = text.replace(/\*/g, '');
-    text = text.replace(/^#+\s*/gm, '');
+    // Convert markdown bold to HTML
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert markdown italic to HTML
+    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Convert markdown headers
+    text = text.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    text = text.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+    text = text.replace(/^# (.*$)/gim, '<h1>$1</h1>');
     
     // Convert newlines to <br> tags
     text = text.replace(/\n/g, '<br>');
+    
+    // Convert lists
+    text = text.replace(/^\- (.*$)/gim, '<li>$1</li>');
+    text = text.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
     
     return text;
 }
@@ -115,6 +130,21 @@ function addMessage(text, sender, isLoading = false) {
     
     chatBox.appendChild(messageDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
+    
+    // ✅ RENDER CÔNG THỨC TOÁN HỌC SAU KHI THÊM TIN NHẮN
+    if (!isLoading && sender === 'bot') {
+        setTimeout(() => {
+            renderMathInElement(messageDiv, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false},
+                    {left: '\\(', right: '\\)', display: false},
+                    {left: '\\[', right: '\\]', display: true}
+                ],
+                throwOnError: false
+            });
+        }, 100);
+    }
     
     return messageId;
 }
@@ -237,13 +267,44 @@ function quickQuestion(question) {
 .message-content {
     padding: 16px 20px;
     border-radius: 18px;
-    line-height: 1.6;
-    white-space: pre-wrap;
+    line-height: 1.8;
     word-wrap: break-word;
 }
 
-.message-content div {
-    margin: 0;
+/* ✅ STYLE CHO CÔNG THỨC TOÁN HỌC */
+.message-content .katex {
+    font-size: 1.1em;
+}
+
+.message-content .katex-display {
+    margin: 1em 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.message-content strong {
+    font-weight: 700;
+    color: inherit;
+}
+
+.message-content em {
+    font-style: italic;
+}
+
+.message-content h1, 
+.message-content h2, 
+.message-content h3 {
+    margin: 0.8em 0 0.5em 0;
+    font-weight: 700;
+}
+
+.message-content ul {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+}
+
+.message-content li {
+    margin: 0.3em 0;
 }
 
 .user-message {
@@ -280,10 +341,6 @@ function quickQuestion(question) {
 
 .loading {
     opacity: 0.6;
-}
-
-.loading .message-content {
-    position: relative;
 }
 
 .loading .message-content::after {
@@ -416,23 +473,6 @@ function quickQuestion(question) {
         padding: 20px 15px;
     }
 
-    .header-section {
-        margin-bottom: 20px;
-    }
-
-    .main-title {
-        font-size: 1.5rem;
-    }
-    
-    .subtitle {
-        font-size: 0.85rem;
-    }
-
-    .subtitle-underline {
-        width: 50px;
-        height: 2px;
-    }
-    
     .chat-box {
         height: calc(100vh - 420px);
         min-height: 400px;
@@ -441,62 +481,24 @@ function quickQuestion(question) {
     
     .message {
         max-width: 90%;
-        margin-bottom: 20px;
-    }
-
-    .message-header {
-        font-size: 0.8rem;
-        margin-bottom: 6px;
     }
 
     .message-content {
         padding: 12px 16px;
         font-size: 0.95rem;
     }
+
+    /* ✅ CÔNG THỨC TOÁN RESPONSIVE */
+    .message-content .katex {
+        font-size: 1em;
+    }
+
+    .message-content .katex-display {
+        font-size: 0.9em;
+    }
     
     .suggestions-grid {
         grid-template-columns: 1fr;
-    }
-
-    .suggestions {
-        padding: 20px 15px;
-    }
-
-    .suggestions-header {
-        font-size: 1rem;
-        margin-bottom: 15px;
-    }
-
-    .suggestion-btn {
-        padding: 14px 16px;
-    }
-
-    .suggestion-text {
-        font-size: 0.9rem;
-    }
-    
-    .chat-input-container {
-        padding: 20px 15px;
-    }
-
-    .chat-input-container input {
-        padding: 14px 16px;
-        font-size: 0.95rem;
-    }
-    
-    .btn-primary {
-        padding: 14px 28px;
-        font-size: 0.95rem;
-    }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-    .chat-box {
-        height: 600px;
-    }
-
-    .main-title {
-        font-size: 1.6rem;
     }
 }
 </style>

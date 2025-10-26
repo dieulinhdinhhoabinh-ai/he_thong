@@ -134,7 +134,7 @@ class Database:
     
     def add_document(self, doc_data):
         """
-        ✅ HÀM ĐÃ ĐƯỢC SỬA - Thêm tài liệu cho THCS (lớp 6, 7, 8, 9)
+         Thêm tài liệu cho THCS (lớp 6, 7, 8, 9)
         """
         documents = self.get_all_documents()
         doc_id = f"doc_{len(documents) + 1}"
@@ -144,15 +144,16 @@ class Database:
         new_doc = {
             'id': doc_id,
             'title': doc_data['title'],
-            'grade': doc_data.get('grade', ''),                    # ✅ THÊM: Lớp học (6, 7, 8, 9)
-            'doc_type': doc_data.get('doc_type', 'document'),      # ✅ SỬA: Đổi từ 'type' thành 'doc_type'
-            'link_type': doc_data.get('link_type', 'other'),       # ✅ THÊM: Loại link (youtube, drive, other)
+            'grade': doc_data.get('grade', ''),
+            'doc_type': doc_data.get('doc_type', 'document'),
+            'link_type': doc_data.get('link_type', 'other'),
             'url': url,
             'description': doc_data.get('description', ''),
+            'teacher_id': doc_data.get('teacher_id'),  # ✅ THÊM DÒNG NÀY
             'created_at': datetime.now().isoformat()
         }
         
-        print(f"💾 LƯU TÀI LIỆU: ID={new_doc['id']}, Title={new_doc['title']}, Grade={new_doc['grade']}, Type={new_doc['doc_type']}")
+        print(f"💾 LƯU TÀI LIỆU: ID={new_doc['id']}, Title={new_doc['title']}, Grade={new_doc['grade']}, Type={new_doc['doc_type']}, Teacher={new_doc['teacher_id']}")
         
         documents.append(new_doc)
         self._save_json(self.documents_file, documents)

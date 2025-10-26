@@ -382,7 +382,7 @@ def submit_exercise():
     
     except Exception as e:
         return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'})
-
+###############
 
 @app.route('/documents')
 @login_required
@@ -410,7 +410,43 @@ def documents():
                          current_grade=grade_filter,
                          current_type=type_filter)
 
+############
+@app.route('/teacher/delete_document/<doc_id>', methods=['POST'])
+@teacher_required
+def delete_document(doc_id):
+    """
+    Xóa tài liệu - chỉ giáo viên mới có quyền xóa
+    """
+    try:
+        docs = db.get_all_documents()
+        doc = next((d for d in docs if d['id'] == doc_id), None)
+        
+        if not doc:
+            return jsonify({'success': False, 'message': 'Tài liệu không tồn tại'})
+        
+        # Kiểm tra quyền: chỉ giáo viên tạo tài liệu mới được xóa
+        if doc.get('teacher_id') != session['user_id']:
+            return jsonify({'success': False, 'message': 'Bạn không có quyền xóa tài liệu này'})
+        
+        # Xóa file đính kèm nếu có (nếu bạn lưu file local)
+        if doc.get('attachments'):
+            for attachment in doc.get('attachments', []):
+                try:
+                    if os.path.exists(attachment.get('path', '')):
+                        os.remove(attachment['path'])
+                except:
+                    pass
+        
+        # Xóa tài liệu khỏi database
+        docs = [d for d in docs if d['id'] != doc_id]
+        db._save_json(db.documents_file, docs)
+        
+        return jsonify({'success': True, 'message': 'Xóa tài liệu thành công'})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'})
 
+################
 @app.route('/teacher/add_document', methods=['GET', 'POST'])
 @teacher_required
 def add_document():
@@ -421,7 +457,6 @@ def add_document():
             if not data.get('title') or not data.get('url'):
                 return jsonify({'success': False, 'message': 'Vui lòng nhập đầy đủ thông tin'})
             
-            # Thêm trường grade và doc_type vào dữ liệu
             if not data.get('grade'):
                 return jsonify({'success': False, 'message': 'Vui lòng chọn lớp học'})
             
@@ -435,6 +470,9 @@ def add_document():
             else:
                 data['link_type'] = data.get('link_type', 'other')
             
+            
+            data['teacher_id'] = session['user_id']
+            
             doc_id = db.add_document(data)
             
             return jsonify({'success': True, 'doc_id': doc_id, 'message': 'Thêm tài liệu thành công'})
@@ -443,8 +481,7 @@ def add_document():
             return jsonify({'success': False, 'message': f'Lỗi: {str(e)}'})
     
     return render_template('add_document.html')
-
-
+#################################
 @app.route('/chatbot')
 @login_required
 def chatbot():
